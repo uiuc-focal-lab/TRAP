@@ -1,0 +1,35 @@
+# TRAP: Targeted Redirecting of Agentic Preferences
+# Core dependencies for local installation.
+#
+# Install with:
+#   pip install -r requirements.txt
+#   pip install git+https://github.com/openai/CLIP.git
+#
+# Note: PyTorch is not listed here because the correct version depends on your
+# CUDA version. Install it first from https://pytorch.org/get-started/locally/
+# before running pip install -r requirements.txt.
+
+# Image generation
+diffusers>=0.27.0
+
+# Vision-language models
+transformers>=4.45.0
+accelerate>=0.27.0
+
+# Datasets
+datasets>=2.18.0
+huggingface_hub>=0.22.0
+
+# Perceptual loss
+lpips>=0.1.4
+
+# Image processing
+Pillow>=10.0.0
+torchvision>=0.17.0
+
+# Numerical / utility
+numpy>=1.24.0
+filelock>=3.13.0
+ftfy>=6.1.0
+wcwidth>=0.2.0
+regex>=2023.0.0

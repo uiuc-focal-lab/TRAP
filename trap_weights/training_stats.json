@@ -1,0 +1,7 @@
+{
+  "epoch": 20,
+  "semantic_loss_mean": 0.0030067069820555927,
+  "distinctive_loss_mean": 0.0009994911824541956,
+  "siamese_total_mean": 0.0033065543503391147,
+  "layout_loss_mean": 0.12047751436135946
+}

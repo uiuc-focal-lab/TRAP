@@ -1,0 +1,69 @@
+# HTCondor job submission — TRAP evaluation: full pipeline (generate + score)
+#
+# Before submitting, set:
+#   export TRAP_CONTAINER_SIF=/path/to/trap_container.sif
+#   export HF_HOME=/path/to/hf_cache         # e.g. /fast/jyeon/hf_cache
+#   export TORCH_HOME=/path/to/torch_cache   # e.g. /fast/jyeon/torch_cache
+#
+# Submit from the TRAP repository root:
+#   cd /path/to/TRAP && condor_submit scripts/eval_pipeline_container.sub
+#
+# $ENV(PWD) is read at submit time and must be the TRAP root directory.
+universe = vanilla
+executable = /usr/bin/apptainer
+
+arguments = exec --nv \
+            -B $ENV(PWD):/code \
+            -B $ENV(HF_HOME):$ENV(HF_HOME) \
+            -B $ENV(TORCH_HOME):$ENV(TORCH_HOME) \
+            --pwd /code \
+            $ENV(TRAP_CONTAINER_SIF) \
+            /bin/bash /code/scripts/run_eval.sh \
+            --stage both \
+            --sd_model Manojb/stable-diffusion-2-1-base \
+            --hf_dataset SargeZT/coco-stuff-captioned \
+            --split train \
+            --n_variations 4 \
+            --sample_size 30 \
+            --runs_per_image 20 \
+            --generation_max_regeneration_attempts 12 \
+            --generation_debiased_calibration_samples 16 \
+            --target_selection_confidence_z 1.0 \
+            --target_selection_min_gap 0.03 \
+            --eval_local_files_only \
+            --eval_strategy debiased \
+            --pos_prompt_backend hf_vlm \
+            --pos_prompt_temperature 0.7 \
+            --sample_strategy least_chosen \
+            --hard_mining_min_effective_runs 5 \
+            --attack_outer_steps 32 \
+            --attack_lr 0.15 \
+            --attack_eps 6.0 \
+            --lambda_sem 0.2 \
+            --prompt_token_blend 0.4 \
+            --attack_eval_runs 10 \
+            --attack_eval_max_gpu_memory_gib 40 \
+            --no_attack_eval_early_stop \
+            --eval_optimize_target_in_eval \
+            --trap_sd_prompt_source positive_caption \
+            --trap_pos_prompt_source positive_caption \
+            --debiased_calibration_samples 8 \
+            --debiased_calibration_permutations 4
+
+should_transfer_files = NO
+stream_output = True
+stream_error = True
+getenv = True
+
+error  = logs/job.$(Cluster).err
+output = logs/job.$(Cluster).out
+log    = logs/job.$(Cluster).log
+
+request_cpus   = 8
+request_memory = 120G
+request_gpus   = 1
+request_disk   = 200G
+requirements = TARGET.CUDADeviceName == "NVIDIA H100 80GB HBM3"
+
++BypassLXCfs = "true"
+queue

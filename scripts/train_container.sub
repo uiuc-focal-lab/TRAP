@@ -1,0 +1,42 @@
+# HTCondor job submission — TRAP training
+#
+# Before submitting, set:
+#   export TRAP_CONTAINER_SIF=/path/to/trap_container.sif
+#   export TORCH_HOME=/path/to/torch_cache   # e.g. /fast/jyeon/torch_cache
+#   export HF_HOME=/path/to/hf_cache         # e.g. /fast/jyeon/hf_cache
+#
+# Submit from the TRAP repository root:
+#   cd /path/to/TRAP && condor_submit scripts/train_container.sub
+#
+# $ENV(PWD) is read at submit time and must be the TRAP root directory.
+universe = vanilla
+executable = /usr/bin/apptainer
+
+arguments = exec --nv \
+            -B $ENV(PWD):/code \
+            -B $ENV(HF_HOME):$ENV(HF_HOME) \
+            -B $ENV(TORCH_HOME):$ENV(TORCH_HOME) \
+            --pwd /code \
+            $ENV(TRAP_CONTAINER_SIF) \
+            /bin/bash /code/scripts/run_train.sh \
+            --epochs 20 \
+            --lr 5e-3 \
+            --distinct_weight 0.3
+
+should_transfer_files = NO
+stream_output = True
+stream_error = True
+getenv = True
+
+error  = logs/job.$(Cluster).err
+output = logs/job.$(Cluster).out
+log    = logs/job.$(Cluster).log
+
+request_cpus   = 10
+request_memory = 80G
+request_gpus   = 1
+request_disk   = 200G
+requirements = TARGET.CUDADeviceName == "NVIDIA H100 80GB HBM3"
+
++BypassLXCfs = "true"
+queue

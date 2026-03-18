@@ -1,0 +1,8 @@
+__pycache__
+trap_packages
+trap_eval_outputs
+logs
+torch_cache
+xdg_cache
+hf_cache
+*.sif
