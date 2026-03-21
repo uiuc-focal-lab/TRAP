@@ -8,7 +8,7 @@ import os
 import random
 import re
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -75,13 +75,25 @@ class HFVLMEvaluator:
         self._image_token_index = None
         self._n_image_tokens = None
 
+        processor_error: Exception | None = None
         try:
             self.processor = AutoProcessor.from_pretrained(
                 model_id,
                 local_files_only=local_files_only,
                 trust_remote_code=trust_remote_code,
             )
-        except Exception:
+        except Exception as exc:
+            processor_error = exc
+            try:
+                self.processor = AutoProcessor.from_pretrained(
+                    model_id,
+                    local_files_only=local_files_only,
+                    trust_remote_code=trust_remote_code,
+                    use_fast=False,
+                )
+            except Exception:
+                self.processor = None
+        if self.processor is None:
             cfg = AutoConfig.from_pretrained(
                 model_id,
                 local_files_only=local_files_only,
@@ -89,6 +101,11 @@ class HFVLMEvaluator:
             )
             vision_tower = getattr(cfg, "mm_vision_tower", None) or getattr(cfg, "vision_tower", None)
             if not isinstance(vision_tower, str):
+                if processor_error is not None:
+                    raise RuntimeError(
+                        f"AutoProcessor loading failed for {model_id!r} and manual fallback is unsupported. "
+                        f"Original processor error: {processor_error!r}"
+                    ) from processor_error
                 raise RuntimeError(f"Can't build manual processor: missing mm_vision_tower in config for {model_id!r}")
 
             self._image_token_index = int(getattr(cfg, "image_token_index"))
@@ -1555,7 +1572,7 @@ def _resolve_run_output_dir(*, base_output_dir: str, stage: str, isolate_run: bo
     selected = (run_name or "").strip() or None
     if selected is None:
         if stage in {"generate", "both"}:
-            selected = datetime.utcnow().strftime("run_%Y%m%d_%H%M%S")
+            selected = datetime.now(UTC).strftime("run_%Y%m%d_%H%M%S")
         else:
             if not latest_file.exists():
                 raise RuntimeError(
@@ -2175,18 +2192,18 @@ async def _stage_eval(*, args, cfg: RunConfig) -> None:
                 eval_strategy=strategy,
             )
         if prep_vlm_eval is not None:
-            del prep_vlm_eval
-            _cleanup_cuda()
-
-        vlm_eval = HFVLMEvaluator(
-            model_id=model_id,
-            device=device,
-            dtype=dtype,
-            local_files_only=args.eval_local_files_only,
-            trust_remote_code=args.eval_trust_remote_code,
-            max_new_tokens=args.eval_max_new_tokens,
-            temperature=args.eval_temperature,
-        )
+            vlm_eval = prep_vlm_eval
+            prep_vlm_eval = None
+        else:
+            vlm_eval = HFVLMEvaluator(
+                model_id=model_id,
+                device=device,
+                dtype=dtype,
+                local_files_only=args.eval_local_files_only,
+                trust_remote_code=args.eval_trust_remote_code,
+                max_new_tokens=args.eval_max_new_tokens,
+                temperature=args.eval_temperature,
+            )
         if strategy == "debiased" and debiased_prior is None:
             debiased_prior, debiased_prior_meta = await _estimate_debiased_prior(
                 output_dir=output_dir,

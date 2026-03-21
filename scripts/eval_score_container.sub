@@ -23,7 +23,6 @@ arguments = exec --nv \
             --sd_model Manojb/stable-diffusion-2-1-base \
             --sample_size 8 \
             --runs_per_image 10 \
-            --eval_local_files_only \
             --attack_outer_steps 32 \
             --attack_lr 0.15 \
             --attack_eps 6.0 \

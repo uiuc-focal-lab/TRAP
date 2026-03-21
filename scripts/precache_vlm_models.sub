@@ -5,7 +5,7 @@
 #   export HF_HOME=/path/to/hf_cache         # e.g. /fast/jyeon/hf_cache
 #
 # Submit from the TRAP repository root:
-#   cd /path/to/TRAP && condor_submit scripts/precache_vlm_models.sub
+#   cd /path/to/TRAP && condor_submit_bid 50 scripts/precache_vlm_models.sub
 #
 # $ENV(PWD) is read at submit time and must be the TRAP root directory.
 universe = vanilla
