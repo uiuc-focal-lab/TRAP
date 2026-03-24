@@ -2393,8 +2393,8 @@ async def main():
     parser.add_argument("--hf_dataset", type=str, default="SargeZT/coco-stuff-captioned")
     parser.add_argument("--split", type=str, default="train")
     parser.add_argument("--n_variations", type=int, default=4, help="Total images compared (trap + normals).")
-    parser.add_argument("--sample_size", type=int, default=100)
-    parser.add_argument("--runs_per_image", type=int, default=100, help="How many random shuffles for n-way voting.")
+    parser.add_argument("--sample_size", type=int, default=30)
+    parser.add_argument("--runs_per_image", type=int, default=20, help="How many random shuffles for n-way voting.")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--output_dir", type=str, default="./trap_eval_outputs")
     parser.add_argument(
@@ -2413,13 +2413,13 @@ async def main():
     parser.add_argument(
         "--hard_mining_min_effective_runs",
         type=int,
-        default=20,
+        default=5,
         help="Minimum effective eval runs required for a sample to be considered in hard-mining.",
     )
     parser.add_argument(
         "--generation_max_regeneration_attempts",
         type=int,
-        default=24,
+        default=12,
         help="How many extra dataset indices generation may try when ambiguous target selection samples are dropped.",
     )
     parser.add_argument(
@@ -2455,18 +2455,18 @@ async def main():
     )
     parser.add_argument("--no_seg_mask", action="store_true")
     parser.add_argument("--cpu_offload", action="store_true")
-    parser.add_argument("--attack_outer_steps", type=int, default=8, help="Number of TRAP outer iterations.")
+    parser.add_argument("--attack_outer_steps", type=int, default=32, help="Number of TRAP outer iterations.")
     parser.add_argument("--attack_inner_steps", type=int, default=20, help="Number of surrogate gradient steps per TRAP outer iteration.")
-    parser.add_argument("--attack_lr", type=float, default=0.1)
-    parser.add_argument("--attack_eps", type=float, default=3.0, help="L2 radius around the original image embedding on the unit sphere.")
+    parser.add_argument("--attack_lr", type=float, default=0.15)
+    parser.add_argument("--attack_eps", type=float, default=6.0, help="L2 radius around the original image embedding on the unit sphere.")
     parser.add_argument("--lambda_sem", type=float, default=0.2, help="Weight for the semantic-preservation term l_sem.")
     parser.add_argument("--lambda_dist", type=float, default=0.3, help="Weight for the learned distinctive-feature preservation term.")
     parser.add_argument("--lambda_lpips", type=float, default=1.0, help="Weight for LPIPS image similarity.")
-    parser.add_argument("--prompt_token_blend", type=float, default=0.1, help="Residual blend scale for token-level prompt embeddings.")
+    parser.add_argument("--prompt_token_blend", type=float, default=0.4, help="Residual blend scale for token-level prompt embeddings.")
     parser.add_argument(
         "--attack_eval_runs",
         type=int,
-        default=0,
+        default=10,
         help="Mini evaluator runs per outer step during TRAP optimization; 0 disables evaluator-guided outer-loop selection.",
     )
     parser.add_argument(
@@ -2478,7 +2478,7 @@ async def main():
     parser.add_argument(
         "--attack_eval_early_stop",
         action="store_true",
-        default=True,
+        default=False,
         help="Stop TRAP outer-loop optimization early once mini evaluation exceeds the above-chance threshold.",
     )
     parser.add_argument("--no_attack_eval_early_stop", action="store_false", dest="attack_eval_early_stop")
@@ -2515,7 +2515,7 @@ async def main():
         "--eval_strategy",
         type=str,
         choices=["auto", "grid", "debiased"],
-        default="auto",
+        default="debiased",
         help="How to use the evaluator. 'grid' asks for the best panel label on one concatenated strip. "
         "'debiased' uses anchored separate-image prompts plus option-probability debiasing. "
         "'auto' resolves to 'debiased'.",

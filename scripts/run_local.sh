@@ -29,7 +29,28 @@ mkdir -p "${TRAP_WEIGHTS_DIR}" \
 export PYTHONPATH="${TRAP_PACKAGES_DIR}:${PYTHONPATH:-}"
 export HF_HUB_DISABLE_TELEMETRY=1
 export HF_HUB_OFFLINE=0
+export HF_HUB_ENABLE_HF_TRANSFER=0
 export SOFT_FILELOCK=1
+
+# Install lpips into TRAP_PACKAGES_DIR if not already present.
+python - <<PY
+import importlib, subprocess, sys
+target = "${TRAP_PACKAGES_DIR}"
+sys.path.insert(0, target)
+try:
+    lpips = importlib.import_module("lpips")
+    _ = lpips.LPIPS(net="alex")
+    print("[TRAP] lpips already installed.")
+except Exception:
+    print("[TRAP] Installing lpips into", target)
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "--target", target,
+         "--no-cache-dir", "--no-deps", "--upgrade", "lpips"]
+    )
+    lpips = importlib.import_module("lpips")
+    _ = lpips.LPIPS(net="alex")
+    print("[TRAP] lpips install complete.")
+PY
 
 COMMAND="${1:-}"
 shift || true
@@ -44,10 +65,36 @@ case "${COMMAND}" in
 
   eval)
     echo "[TRAP] Running: eval"
+    # Load the default eval model list if no --eval_models / --eval_model was passed.
+    eval_args=("$@")
+    has_eval_models=0
+    has_eval_model=0
+    has_eval_trust_remote_code=0
+    for arg in "${eval_args[@]}"; do
+      case "${arg}" in
+        --eval_models) has_eval_models=1 ;;
+        --eval_model) has_eval_model=1 ;;
+        --eval_trust_remote_code) has_eval_trust_remote_code=1 ;;
+      esac
+    done
+    if [ "${has_eval_models}" -eq 0 ] && [ -f "${SCRIPT_DIR}/model_lists.sh" ]; then
+      source "${SCRIPT_DIR}/model_lists.sh"
+      model_csv="$(trap_vlm_models_csv)"
+      if [ -n "${model_csv}" ]; then
+        echo "[TRAP] Using default eval model list: ${model_csv}"
+        eval_args+=(--eval_models "${model_csv}")
+        if [ "${has_eval_model}" -eq 0 ] && [ "${#TRAP_EVAL_MODEL_IDS[@]}" -gt 0 ]; then
+          eval_args+=(--eval_model "${TRAP_EVAL_MODEL_IDS[0]}")
+        fi
+      fi
+    fi
+    if [ "${has_eval_trust_remote_code}" -eq 0 ]; then
+      eval_args+=(--eval_trust_remote_code)
+    fi
     python "${SRC_DIR}/trap_framework_eval.py" \
       --weights_dir "${TRAP_WEIGHTS_DIR}" \
       --output_dir  "${TRAP_OUTPUTS_DIR}" \
-      "$@"
+      "${eval_args[@]}"
     ;;
 
   precache)

@@ -114,9 +114,9 @@ bash scripts/run_local.sh eval \
   --sd_model Manojb/stable-diffusion-2-1-base \
   --hf_dataset SargeZT/coco-stuff-captioned \
   --split train \
-  --sample_size 40 \
+  --sample_size 30 \
   --n_variations 4 \
-  --runs_per_image 10
+  --runs_per_image 20
 ```
 
 #### Scoring stage - evaluate generated images with a VLM
@@ -126,8 +126,8 @@ bash scripts/run_local.sh eval \
   --stage eval \
   --eval_model "Qwen/Qwen2.5-VL-32B-Instruct" \
   --eval_strategy debiased \
-  --sample_size 8 \
-  --runs_per_image 10
+  --sample_size 30 \
+  --runs_per_image 20
 ```
 
 #### Full pipeline (both stages)
@@ -135,8 +135,7 @@ bash scripts/run_local.sh eval \
 ```bash
 bash scripts/run_local.sh eval \
   --stage both \
-  --sd_model Manojb/stable-diffusion-2-1-base \
-  --sample_size 30
+  --sd_model Manojb/stable-diffusion-2-1-base
 ```
 
 `--weights_dir` and `--output_dir` are set automatically from `config.sh`. Pass them explicitly to override:
@@ -150,19 +149,26 @@ bash scripts/run_local.sh eval --stage both \
 
 Key evaluation arguments:
 
-| Argument | Description |
-|---|---|
-| `--stage` | `generate`, `eval`, or `both` |
-| `--weights_dir` | Path to trained TRAP model checkpoints |
-| `--output_dir` | Directory for generated images and results |
-| `--sd_model` | Stable Diffusion model (HuggingFace repo id or local path) |
-| `--eval_model` | Primary VLM for scoring |
-| `--eval_models` | Comma-separated list of VLMs for multi-model evaluation |
-| `--eval_strategy` | `auto`, `grid`, or `debiased` |
-| `--sample_size` | Number of samples to process per run |
-| `--n_variations` | Number of adversarial image variants per sample |
-| `--runs_per_image` | Number of optimization runs per image |
-| `--eval_trust_remote_code` | Pass `trust_remote_code=True` when loading VLMs |
+| Argument | Default | Description |
+|---|---|---|
+| `--stage` | `both` | `generate`, `eval`, or `both` |
+| `--weights_dir` | from `config.sh` | Path to trained TRAP model checkpoints |
+| `--output_dir` | from `config.sh` | Directory for generated images and results |
+| `--sd_model` | `Manojb/stable-diffusion-2-1-base` | Stable Diffusion model (HuggingFace repo id or local path) |
+| `--eval_model` | `Qwen/Qwen2.5-VL-32B-Instruct` | Primary VLM for scoring |
+| `--eval_models` | auto from `model_lists.sh` | Comma-separated list of VLMs for multi-model evaluation |
+| `--eval_strategy` | `debiased` | `auto`, `grid`, or `debiased` |
+| `--eval_trust_remote_code` | auto-injected | Pass `trust_remote_code=True` when loading VLMs |
+| `--sample_size` | `30` | Number of samples to process per run |
+| `--n_variations` | `4` | Number of candidate images in the multiple-choice set |
+| `--runs_per_image` | `20` | Number of random shuffles for n-way voting |
+| `--attack_outer_steps` | `32` | Number of TRAP outer optimization iterations |
+| `--attack_lr` | `0.15` | TRAP optimization learning rate |
+| `--attack_eps` | `6.0` | L2 perturbation radius on the unit sphere |
+| `--prompt_token_blend` | `0.4` | Residual blend scale for token-level prompt embeddings |
+| `--lambda_sem` | `0.2` | Weight for semantic-preservation loss |
+| `--attack_eval_runs` | `10` | Mini evaluator runs per outer step (0 disables) |
+| `--attack_eval_early_stop` | `False` | Stop outer loop early once above-chance (use `--no_attack_eval_early_stop`) |
 
 ---
 
