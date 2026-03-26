@@ -17,7 +17,7 @@ Authors:
 (* Equal Contribution)
 ---
 
-## Overview
+## Overview 
 
 TRAP is a framework for generating semantic-aware adversarial image perturbations that redirect the preferences of Vision-Language Model (VLM) agents. Given a set of candidate images presented to a VLM in a multiple-choice setting, TRAP perturbs one image to "inject" semantic information into the image without relying on random noise. The perturbations are guided by learned semantic structure (via CLIP) and applied through a Stable Diffusion img2img pipeline.
 
